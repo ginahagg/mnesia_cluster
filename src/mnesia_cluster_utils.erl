@@ -17,6 +17,7 @@
 -module(mnesia_cluster_utils).
 
 -export([init/0,
+         init/1,
          join_cluster/2,
          reset/0,
          force_reset/0,
@@ -78,6 +79,30 @@ init_from_config() ->
         [] -> init_db_and_upgrade([node()], disc, false);
         _  -> auto_cluster(TryNodes, NodeType)
     end.
+
+%%for testing purposes
+init_with_config(Config) ->
+    {ok, {TryNodes, NodeType}} = proplists:get_value(cluster_nodes, Config),
+    case TryNodes of
+        [] -> init_db_and_upgrade([node()], disc, false);
+        _  -> auto_cluster(TryNodes, NodeType)
+    end.
+
+%%for testing purposes
+init(Config) ->
+    ensure_mnesia_running(),
+    ensure_mnesia_dir(),
+    case is_virgin_node() of
+        true  -> init_with_config(Config);
+        false -> NodeType = node_type(),
+                 init_db_and_upgrade(cluster_nodes(all), NodeType,
+                                     NodeType =:= ram)
+    end,
+    %% We intuitively expect the global name server to be synced when
+    %% Mnesia is up. In fact that's not guaranteed to be the case -
+    %% let's make it so.
+    ok = global:sync(),
+    ok.
 
 auto_cluster(TryNodes, NodeType) ->
     case find_auto_cluster_node(nodes_excl_me(TryNodes)) of

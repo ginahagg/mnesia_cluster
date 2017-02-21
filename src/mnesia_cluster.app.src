@@ -13,10 +13,20 @@
   {env, [
         {table_definition_mod, {mnesia_cluster_table, test_defs, []}},
         {app_process, mnesia_cluster},
-        {cluster_nodes, {[], disc}}, %% {TryNodes, NodeType}
+        {cluster_nodes, {[
+        'cluster@ginacontroller01.dev1.core.astra.rocks',
+        'cluster@ginacontroller02.dev1.core.astra.rocks',
+        'cluster@ginacontroller03.dev1.core.astra.rocks',
+        'cluster@ginacontroller04.dev1.core.astra.rocks',
+        'cluster@ginacontroller05.dev1.core.astra.rocks'], disc}},
         %{cluster_partition_handling, ignore}
         %{cluster_partition_handling, autoheal}
-        {cluster_partition_handling, pause_minority}
-        
-    ]}
+        {cluster_partition_handling, pause_minority},
+        %% Timeout used when waiting for Mnesia tables in a cluster to become available.
+        {mnesia_table_loading_retry_timeout, 30000},
+
+       %% Retries when waiting for Mnesia tables in the cluster startup. Note that
+        %% this setting is not applied to Mnesia upgrades or node deletions.
+       {mnesia_table_loading_retry_limit, 10}
+  ]}
  ]}.
