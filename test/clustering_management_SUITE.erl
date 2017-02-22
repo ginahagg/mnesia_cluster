@@ -19,9 +19,9 @@ groups() ->
     {cluster, [sequence],
      [
       %test_empty_slave 
-      start_slaves
+      %start_slaves
       %,auto_cluster
-      %,cluster_test
+      cluster_test
       %,cluster_join
      %,cluster_leave
       %,cluster_remove
@@ -37,7 +37,7 @@ init_per_suite(Config) ->
     application:set_env(mnesia_cluster,app_process, proplists:get_value(app_process,localconfig())),
     erlang:set_cookie(node(),gina),
     %application:ensure_started(mnesia),
-    application:ensure_all_started(mnesia_cluster),
+    
     [{config, localconfig()} | Config].
 
 end_per_suite(_Config) ->
@@ -82,38 +82,37 @@ vmconfig() ->
 %%--------------------------------------------------------------------
 %% cluster group
 %%--------------------------------------------------------------------
-start_slaves()->
-    [start_slave(S) || S <- [swan, kitri]],
+start_slaves(_Config)->
+    start_slave_connect([swan, kitri]),
+
+    {ok, [mnesia,mnesia_cluster]} = application:ensure_all_started(mnesia_cluster),
     ok.
 
+%%1. Start two mnesia nodes, they cluster
+%%2. start mnesia in ct node
+%%3. Add a node
 
-nodeinfo() ->
-    V = mnesia_cluster_utils:node_info(),
-    ct:pal("V: ~p~n",[V]),
-    V.
-
-auto_cluster() ->
-    start_slaves(),
-    rpc:call(swan, application,set_env,[mnesia_cluster, localconfig()]).
-
-cluster_test(_Config) ->
-    io:format("cluster_test:starting Z"),
+cluster_test() ->
+    %%1
+    start_slave_connect([swan, kitri]),
+    {ok, [mnesia,mnesia_cluster]} = application:ensure_all_started(mnesia_cluster),
+    ct:pal("cluster_test:starting Z"),
     Z = start_slave(cluster_test_z),
-    wait_running(Z),
-    connect_node(Z),
-    true = rpc:call(Z, mnesia_cluster_utils, ensure_mnesia_running, []),
-    Node = node(),
-    ok = rpc:call(Z, mnesia_cluster_utils, join_cluster, [Node, ram]),
-    [Z, Node] = lists:sort(mnesia:system_info(running_db_nodes)),
-    ct:log("Z:~p, Node:~p", [Z, Node]),
-    ok = rpc:call(Z, mnesia_cluster_utils, leave, []),
-    [Node] = lists:sort(mnesia:system_info(running_db_nodes)),
-    ok = slave:stop(Z).
+    %wait_running(Z),
+    %connect_node(Z),
+    %true = rpc:call(Z, mnesia_cluster_utils, ensure_mnesia_running, []),
+    %Node = node(),
+    %ok = rpc:call(Z, mnesia_cluster_utils, join_cluster, [Node, ram]),
+    Nodes = lists:sort(mnesia:system_info(running_db_nodes)),
+    ct:pal("Running nodes should be 3 :~p~n", [Nodes]),
+    {ok, _} = ct_slave:stop(cluster_test_z),
+    Rest = lists:sort(mnesia:system_info(running_db_nodes)),
+    ct:pal("Running nodes should be 2:~p~n", [Rest]),    
+    ok.
 
 cluster_join(_) ->
     Z = start_slave(cluster_join_z),
     N = start_slave(cluster_join_n),
-    wait_running(Z),
     true = rpc:call(Z, mnesia_cluster_utils, ensure_mnesia_running, []),
     Node = node(),
     {error, {cannot_join_with_self, Node}} = mnesia_cluster_utils:join_cluster(Node),
@@ -159,7 +158,6 @@ cluster_remove2(_) ->
 cluster_node_down(_) ->
     Z = start_slave(cluster_node_down),
     timer:sleep(1000),
-    wait_running(Z),
     ok = mnesia_cluster_utils:join_cluster(Z, ram),
     slave:stop(Z),
     timer:sleep(1000),
@@ -341,20 +339,44 @@ start_slave(Node) ->
     EbinFilePath = filename:join([filename:dirname(code:lib_dir(mnesia_cluster, ebin)), "ebin"]),
     ct:pal("~p ebinfilepath: ~p~n",[Node,EbinFilePath]),
     Opts = [
-             {boot_timeout, 30}, {monitor_master, true}, 
+             {boot_timeout, 30}, 
+             {monitor_master, true}, 
              {startup_functions, []},
              {env, []},
              {erl_flags, lists:concat([" -pa ", EbinFilePath])}
-             %{erl_flags, " -setcookie gina "}
-             %{erl_flags, ""}
             ],
     {ok, TestNode} = ct_slave:start(Host, Node, Opts),
-    Res1 = rpc:call(TestNode,mnesia, start, []),
-    Res2 = rpc:call(TestNode,application, ensure__all_started, [mnesia_cluster]),
+    Res1 = rpc:call(TestNode,mnesia_cluster, start, []),
+    ct:pal("Res1: ~p~n",[Res1]),
     Res3 = rpc:call(TestNode,mnesia, system_info, [is_running]),
-    ct:pal("Res1 ~p and Res2 and Res3  ~p~n",[Res1, Res2, Res3]),
+    ct:pal("Res3  ~p~n",[Res3]),
     %Stop = ct_slave:stop(Node),
-    ok.
+    TestNode.
+
+start_slave_connect(Nodes) ->
+    Host = gethostname(),
+    EbinFilePath = filename:join([filename:dirname(code:lib_dir(mnesia_cluster, ebin)), "ebin"]),
+    ct:pal("ebinfilepath: ~p~n",[EbinFilePath]),
+    Opts = [
+             {boot_timeout, 30}, 
+             {monitor_master, true}, 
+             {startup_functions, []},
+             {env, []},
+             {erl_flags, lists:concat([" -pa ", EbinFilePath])}
+            ],
+    TestNodes = lists:map(fun(Node) -> 
+        {ok,TestNode} = ct_slave:start(Host, Node, Opts),
+        C = net_kernel:connect_node(TestNode),
+        ct:pal("for node ~p net_connect returned: ~p~n",[Node, C]),
+        Res1 = rpc:call(TestNode,mnesia_cluster, start, []),
+        ct:pal("for node ~p Res1: ~p~n",[Node, Res1]),
+        Res3 = rpc:call(TestNode,mnesia, system_info, [is_running]),
+        ct:pal("Res3  ~p~n",[Res3]),
+        TestNode
+    end, Nodes),
+    ct:pal("TestNodes: ~p~n", [TestNodes]),
+    %Stop = ct_slave:stop(Node),
+    TestNodes.
 
 test_empty_slave(Config) ->
      Host = gethostname(),
