@@ -1,0 +1,1 @@
+ct_run -sname gina -dir test -pa `rebar3 as test path`
