@@ -10,19 +10,5 @@
                  ]},
   {mod, { mnesia_cluster_app, []}},
   {modules, []},
-  {env, [
-        {table_definition_mod, {mnesia_cluster_table, test_defs, []}},
-        {app_process, mnesia_cluster},
-        {cluster_nodes, 
-        {{net_adm, hostfile,[]}, disc}},
-        %{cluster_partition_handling, ignore}
-        %{cluster_partition_handling, autoheal}
-        {cluster_partition_handling, pause_minority},
-        %% Timeout used when waiting for Mnesia tables in a cluster to become available.
-        {mnesia_table_loading_retry_timeout, 30000},
-
-       %% Retries when waiting for Mnesia tables in the cluster startup. Note that
-        %% this setting is not applied to Mnesia upgrades or node deletions.
-       {mnesia_table_loading_retry_limit, 10}
-  ]}
+  {env, []}
  ]}.
