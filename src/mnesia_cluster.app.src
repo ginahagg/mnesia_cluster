@@ -14,7 +14,7 @@
         {table_definition_mod, {mnesia_cluster_table, test_defs, []}},
         {app_process, mnesia_cluster},
         {cluster_nodes, 
-        {[], disc}},
+        {{net_adm, hostfile,[]}, disc}},
         %{cluster_partition_handling, ignore}
         %{cluster_partition_handling, autoheal}
         {cluster_partition_handling, pause_minority},
