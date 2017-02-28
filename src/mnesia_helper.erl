@@ -1,6 +1,7 @@
 -module(mnesia_helper).
 
 -compile(export_all).
+
 -record(test_tab_item, {id, name, description}).
 
 write(Table, Records)->
@@ -19,7 +20,7 @@ add(Num) ->
 		Id = LastNum + N,
 		Name = integer_to_list(N),
 		Desc = lists:concat(["this is ", N, "th"]),
-		#test_tab_item{id=Id, name=Name, description=Desc}	
+		#test_tab_item{id=Id, name=Name, description=Desc}		
 	 end 
 	|| N <- lists:seq(1, Num)
 	],
