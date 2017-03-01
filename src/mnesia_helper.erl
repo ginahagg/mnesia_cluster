@@ -14,7 +14,8 @@ write(Table, Records)->
 
 
 add(Num) ->
-    LastNum = list_max(mnesia:dirty_all_keys(test_tab)),	
+	LastNum = case mnesia:table_info(test_tab,size) of 0 -> 0;
+     _-> list_max(mnesia:dirty_all_keys(test_tab)) end,	
 	Recs = [
 	 begin
 		Id = LastNum + N,
