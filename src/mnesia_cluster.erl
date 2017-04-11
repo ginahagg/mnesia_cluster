@@ -16,6 +16,7 @@
 
 
 start() ->
+    lager:start(),
     application:ensure_all_started(mnesia_cluster).
 
 stop() ->

@@ -53,6 +53,7 @@
 
 %% Used internally in rpc calls
 -export([node_info/0, remove_node_if_mnesia_running/1]).
+-compile([{parse_transform, lager_transform}]).
 
 %%----------------------------------------------------------------------------
 %% Main interface
@@ -387,7 +388,7 @@ dir() -> mnesia:system_info(directory).
 %% nodes in the cluster already. It also updates the cluster status
 %% file.
 init_db(ClusterNodes, NodeType, CheckOtherNodes) ->
-    lager:debug("initing db and other nodes from clusternodes:~p~n",[ClusterNodes, OtherNodes]),
+    lager:debug("initing db and other nodes from clusternodes:~p~n",[ClusterNodes, CheckOtherNodes]),
     Nodes = change_extra_db_nodes(ClusterNodes, CheckOtherNodes),
     %% Note that we use `system_info' here and not the cluster status
     %% since when we start the app for the first time the cluster
