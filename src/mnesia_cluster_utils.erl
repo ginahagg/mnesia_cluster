@@ -75,6 +75,7 @@ init() ->
 
 init_from_config() ->
     {ok, {TryNodes, NodeType}} = application:get_env(mnesia_cluster, cluster_nodes),
+    lager:debug("initing from config with clusternodes:~p~n",[TryNodes]),
     case TryNodes of
         [] -> init_db_and_upgrade([node()], disc, false);
         _  -> auto_cluster(TryNodes, NodeType)
@@ -83,6 +84,7 @@ init_from_config() ->
 %%for testing purposes
 init_with_config(Config) ->
     {ok, {TryNodes, NodeType}} = proplists:get_value(cluster_nodes, Config),
+    lager:debug("We are clustering with ~p~n",[TryNodes]),
     case TryNodes of
         [] -> init_db_and_upgrade([node()], disc, false);
         _  -> auto_cluster(TryNodes, NodeType)
@@ -385,6 +387,7 @@ dir() -> mnesia:system_info(directory).
 %% nodes in the cluster already. It also updates the cluster status
 %% file.
 init_db(ClusterNodes, NodeType, CheckOtherNodes) ->
+    lager:debug("initing db and other nodes from clusternodes:~p~n",[ClusterNodes, OtherNodes]),
     Nodes = change_extra_db_nodes(ClusterNodes, CheckOtherNodes),
     %% Note that we use `system_info' here and not the cluster status
     %% since when we start the app for the first time the cluster
@@ -416,6 +419,7 @@ init_db_unchecked(ClusterNodes, NodeType) ->
     init_db(ClusterNodes, NodeType, false).
 
 init_db_and_upgrade(ClusterNodes, NodeType, CheckOtherNodes) ->
+    lager:debug("initing db and upgrading:~p~n",[ClusterNodes]),
     ok = init_db(ClusterNodes, NodeType, CheckOtherNodes),
     %ok = case rabbit_upgrade:maybe_upgrade_local() of
     %         ok                    -> ok;
@@ -435,6 +439,7 @@ init_db_and_upgrade(ClusterNodes, NodeType, CheckOtherNodes) ->
 
 init_db_with_mnesia(ClusterNodes, NodeType,
                     CheckOtherNodes, CheckConsistency) ->
+    lager:debug("initing db with mnesia:~p~n",[ClusterNodes]),
     start_mnesia(CheckConsistency),
     try
         init_db_and_upgrade(ClusterNodes, NodeType, CheckOtherNodes)
