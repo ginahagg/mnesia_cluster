@@ -21,6 +21,7 @@
 %% Application callbacks
 %% ===================================================================
 start(normal, []) ->
+    lager:start(),
     mnesia_cluster_monitor:prepare_cluster_status_files(),
     mnesia_cluster_utils:check_cluster_consistency(),
 
