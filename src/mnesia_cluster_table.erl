@@ -22,6 +22,7 @@
 
 -export([test_defs/0]).
 -record(test_tab_item, {id, name, description}).
+-compile([{parse_transform, lager_transform}]).
 
 %%----------------------------------------------------------------------------
 %% Main interface
