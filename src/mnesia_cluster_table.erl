@@ -67,7 +67,7 @@ wait(TableNames) ->
         ok ->
             ok;
         {timeout, BadTabs} ->
-            lager:debug("oops, we got a time out with BadTabes in mnesia:wait_for_tables ~p~n",[BadTabs]),
+            lager:debug("oops, we got a time out with BadTabs in mnesia:wait_for_tables, we are going to force_load ~p~n",[BadTabs]),
             force_load();
             %throw({error, {timeout_waiting_for_tables, BadTabs}});
         {error, Reason} ->
