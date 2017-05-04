@@ -408,6 +408,7 @@ init_db(ClusterNodes, NodeType, CheckOtherNodes) ->
             ok;
         {[_ | _], _, _} ->
             %% Subsequent node in cluster, catch up
+            lager:debug("initdb: we are catching up with nodes, next is maybe_force_load and wait for replicated"),
             maybe_force_load(),
             ok = mnesia_cluster_table:wait_for_replicated(),
             ok = mnesia_cluster_table:create_local_copy(NodeType)
