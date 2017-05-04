@@ -62,12 +62,14 @@ wait(TableNames) ->
                   {ok, T}   -> T;
                   undefined -> 30000
               end,
+    lager:debug("mnesia_cluster_table:Timeout is ~p~n",[Timeout]),
     case mnesia:wait_for_tables(TableNames, Timeout) of
         ok ->
             ok;
         {timeout, BadTabs} ->
             lager:debug("oops, we got a time out with BadTabes in mnesia:wait_for_tables ~p~n",[BadTabs]),
-            throw({error, {timeout_waiting_for_tables, BadTabs}});
+            force_load();
+            %throw({error, {timeout_waiting_for_tables, BadTabs}});
         {error, Reason} ->
             lager:debug("oops, we got a error with Reason in mnesia:wait_for_tables ~p~n",[Reason]),
             throw({error, {failed_waiting_for_tables, Reason}})
@@ -82,7 +84,7 @@ is_empty() ->
               names()).
 
 check_schema_integrity() ->
-    lager:debug("check_schema_integrity is called"),
+    lager:debug("check_schema_integrity is called~n"),
     Tables = mnesia:system_info(tables),
     case check(fun (Tab, TabDef) ->
                        case lists:member(Tab, Tables) of
